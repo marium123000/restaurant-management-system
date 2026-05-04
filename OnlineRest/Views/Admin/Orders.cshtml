@@ -1,0 +1,140 @@
+@model List<OnlineRest.Models.Order>
+@{
+    ViewData["Title"] = "Manage Orders";
+}
+
+<div class="container-fluid my-4">
+    <h2 class="fw-bold mb-4">
+        <i class="fas fa-shopping-cart me-2"></i>Manage Orders
+    </h2>
+
+    <!-- Success Message -->
+    <div id="statusMessage" class="alert alert-success alert-dismissible fade show" style="display: none;" role="alert">
+        <i class="fas fa-check-circle me-2"></i>
+        <span id="messageText"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="p-3">Order #</th>
+                            <th class="p-3">Customer</th>
+                            <th class="p-3">Date</th>
+                            <th class="p-3">Items</th>
+                            <th class="p-3 text-end">Amount</th>
+                            <th class="p-3">Payment</th>
+                            <th class="p-3 text-center">Status</th>
+                            <th class="p-3 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var order in Model)
+                        {
+                            <tr id="order-row-@order.Id">
+                                <td class="p-3 fw-bold">#@order.Id</td>
+                                <td class="p-3">
+                                    <div>
+                                        <strong>@order.User?.Name</strong>
+                                        <br /><small class="text-muted">@order.User?.Email</small>
+                                    </div>
+                                </td>
+                                <td class="p-3">@order.OrderDate.ToString("MMM dd, yyyy")<br /><small>@order.OrderDate.ToString("hh:mm tt")</small></td>
+                                <td class="p-3">@(order.OrderDetails?.Count ?? 0) items</td>
+                                <td class="p-3 text-end fw-bold">$@order.TotalAmount.ToString("F2")</td>
+                                <td class="p-3" id="payment-@order.Id">
+                                    <small>@order.PaymentMethod</small>
+                                    <br /><span class="badge @(order.PaymentStatus == "Paid" ? "bg-success" : "bg-warning") badge-sm">@order.PaymentStatus</span>
+                                </td>
+                                <td class="p-3 text-center">
+                                    <select name="status" class="form-select form-select-sm order-status-select" 
+                                            data-order-id="@order.Id" 
+                                            data-payment-method="@order.PaymentMethod">
+                                        <option value="Pending" selected="@(order.Status == "Pending")">Pending</option>
+                                        <option value="Processing" selected="@(order.Status == "Processing")">Processing</option>
+                                        <option value="Out for Delivery" selected="@(order.Status == "Out for Delivery")">Out for Delivery</option>
+                                        <option value="Delivered" selected="@(order.Status == "Delivered")">Delivered</option>
+                                        <option value="Cancelled" selected="@(order.Status == "Cancelled")">Cancelled</option>
+                                    </select>
+                                </td>
+                                <td class="p-3 text-center">
+                                    <a asp-controller="Home" asp-action="OrderDetails" asp-route-id="@order.Id" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden form for CSRF token -->
+<form id="hiddenForm" style="display:none;">
+    @Html.AntiForgeryToken()
+</form>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Handle status change
+            $('.order-status-select').on('change', function() {
+                const orderId = $(this).data('order-id');
+                const newStatus = $(this).val();
+                const paymentMethod = $(this).data('payment-method');
+                const selectElement = $(this);
+
+                // Disable select while updating
+                selectElement.prop('disabled', true);
+
+                $.ajax({
+                    url: '@Url.Action("UpdateOrderStatus", "Admin")',
+                    type: 'POST',
+                    data: {
+                        id: orderId,
+                        status: newStatus,
+                        __RequestVerificationToken: $('#hiddenForm input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function(response) {
+                        // Show success message
+                        $('#messageText').text('Order #' + orderId + ' status updated to ' + newStatus);
+                        $('#statusMessage').removeClass('alert-danger').addClass('alert-success').fadeIn();
+                        
+                        // Auto-hide after 3 seconds
+                        setTimeout(function() {
+                            $('#statusMessage').fadeOut();
+                        }, 3000);
+
+                        // Update payment status if delivered and COD
+                        if (newStatus === 'Delivered' && paymentMethod === 'Cash on Delivery') {
+                            $('#payment-' + orderId).html(
+                                '<small>' + paymentMethod + '</small><br />' +
+                                '<span class="badge bg-success badge-sm">Paid</span>'
+                            );
+                        }
+
+                        // Re-enable select
+                        selectElement.prop('disabled', false);
+                    },
+                    error: function() {
+                        // Show error message
+                        $('#messageText').text('Failed to update order status. Please try again.');
+                        $('#statusMessage').removeClass('alert-success').addClass('alert-danger').fadeIn();
+                        
+                        // Re-enable select
+                        selectElement.prop('disabled', false);
+                        
+                        setTimeout(function() {
+                            $('#statusMessage').fadeOut();
+                        }, 3000);
+                    }
+                });
+            });
+        });
+    </script>
+}

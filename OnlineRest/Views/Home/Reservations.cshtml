@@ -1,0 +1,175 @@
+@model List<OnlineRest.Models.TableReservation>
+@{
+    ViewData["Title"] = "Table Reservations";
+}
+
+<div class="container my-4">
+    <h2 class="fw-bold mb-4">
+        <i class="fas fa-calendar-check me-2"></i>Table Reservations
+    </h2>
+
+    <div class="row">
+        <!-- Reservation Form -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-0 p-3">
+                    <h5 class="fw-bold mb-0">Make a Reservation</h5>
+                </div>
+                <div class="card-body p-3">
+                    <form asp-action="CreateReservation" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div class="mb-3">
+                            <label class="form-label">Your Name</label>
+                            <input type="text" name="CustomerName" class="form-control" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="Email" class="form-control" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Phone Number</label>
+                            <input type="tel" name="PhoneNumber" class="form-control" placeholder="+92-300-1234567" required />
+                        </div>
+
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <label class="form-label">Date</label>
+                                <input type="date" name="ReservationDate" class="form-control" min="@DateTime.Now.ToString("yyyy-MM-dd")" required />
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label class="form-label">Time</label>
+                                <select name="ReservationTime" class="form-select" required>
+                                    <option value="">Select</option>
+                                    <option value="11:00">11:00 AM</option>
+                                    <option value="11:30">11:30 AM</option>
+                                    <option value="12:00">12:00 PM</option>
+                                    <option value="12:30">12:30 PM</option>
+                                    <option value="13:00">01:00 PM</option>
+                                    <option value="13:30">01:30 PM</option>
+                                    <option value="14:00">02:00 PM</option>
+                                    <option value="18:00">06:00 PM</option>
+                                    <option value="18:30">06:30 PM</option>
+                                    <option value="19:00">07:00 PM</option>
+                                    <option value="19:30">07:30 PM</option>
+                                    <option value="20:00">08:00 PM</option>
+                                    <option value="20:30">08:30 PM</option>
+                                    <option value="21:00">09:00 PM</option>
+                                    <option value="21:30">09:30 PM</option>
+                                    <option value="22:00">10:00 PM</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Number of Guests</label>
+                            <select name="NumberOfGuests" class="form-select" required>
+                                <option value="">Select</option>
+                                @for (int i = 1; i <= 20; i++)
+                                {
+                                    <option value="@i">@i @(i == 1 ? "Guest" : "Guests")</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Special Requests (Optional)</label>
+                            <textarea name="SpecialRequests" class="form-control" rows="2" placeholder="Window seat, birthday, etc."></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-check me-2"></i>Submit Reservation
+                        </button>
+                    </form>
+
+                    <div class="alert alert-info mt-3 mb-0 p-2">
+                        <small class="d-block fw-bold mb-1">Reservation Policy</small>
+                        <ul class="mb-0 ps-3" style="font-size: 0.75rem;">
+                            <li>Book at least 2 hours in advance</li>
+                            <li>15-minute grace period</li>
+                            <li>Groups 10+: Call us directly</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- My Reservations -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-0 p-3">
+                    <h5 class="fw-bold mb-0">My Reservations</h5>
+                </div>
+                <div class="card-body p-3">
+                    @if (Model.Any())
+                    {
+                        <div class="row g-3">
+                            @foreach (var reservation in Model)
+                            {
+                                var statusClass = reservation.Status switch
+                                {
+                                    "Confirmed" => "success",
+                                    "Cancelled" => "danger",
+                                    "Completed" => "secondary",
+                                    _ => "warning"
+                                };
+
+                                var isPending = reservation.Status == "Pending";
+                                var isFuture = reservation.ReservationDate >= DateTime.Now.Date;
+
+                                <div class="col-md-6">
+                                    <div class="card border h-100">
+                                        <div class="card-body p-3">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <h6 class="fw-bold mb-0">@reservation.CustomerName</h6>
+                                                <span class="badge bg-@statusClass">@reservation.Status</span>
+                                            </div>
+                                            <p class="mb-1 small">
+                                                <i class="fas fa-calendar me-1 text-muted"></i>
+                                                @reservation.ReservationDate.ToString("MMM dd, yyyy")
+                                            </p>
+                                            <p class="mb-1 small">
+                                                <i class="fas fa-clock me-1 text-muted"></i>
+                                                @reservation.ReservationTime
+                                            </p>
+                                            <p class="mb-2 small">
+                                                <i class="fas fa-users me-1 text-muted"></i>
+                                                @reservation.NumberOfGuests @(reservation.NumberOfGuests == 1 ? "Guest" : "Guests")
+                                            </p>
+                                            @if (!string.IsNullOrEmpty(reservation.SpecialRequests))
+                                            {
+                                                <p class="mb-2 small text-muted fst-italic">
+                                                    "@reservation.SpecialRequests"
+                                                </p>
+                                            }
+                                            @if (isPending && isFuture)
+                                            {
+                                                <form asp-action="CancelReservation" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@reservation.Id" />
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm w-100" 
+                                                            onclick="return confirm('Cancel this reservation?')">
+                                                        <i class="fas fa-times me-1"></i>Cancel
+                                                    </button>
+                                                </form>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                            <p class="text-muted mb-0">No reservations yet</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

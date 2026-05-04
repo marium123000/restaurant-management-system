@@ -1,0 +1,148 @@
+﻿@model OnlineRest.Models.SalesReportVM
+
+@{
+    ViewData["Title"] = "Sales Report";
+}
+
+<div class="container-fluid my-4">
+    <h2 class="fw-bold mb-4">
+        <i class="fas fa-chart-line me-2"></i>Sales Report
+    </h2>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4 text-center">
+                    <i class="fas fa-dollar-sign fa-3x mb-3 text-success"></i>
+                    <h6 class="text-muted mb-2">Total Revenue</h6>
+                    <h3 class="fw-bold mb-0">$@Model.TotalRevenue.ToString("F2")</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4 text-center">
+                    <i class="fas fa-shopping-cart fa-3x mb-3 text-primary"></i>
+                    <h6 class="text-muted mb-2">Total Orders</h6>
+                    <h3 class="fw-bold mb-0">@Model.TotalOrders</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4 text-center">
+                    <i class="fas fa-users fa-3x mb-3 text-info"></i>
+                    <h6 class="text-muted mb-2">Total Customers</h6>
+                    <h3 class="fw-bold mb-0">@Model.TotalCustomers</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4 text-center">
+                    <i class="fas fa-chart-bar fa-3x mb-3 text-warning"></i>
+                    <h6 class="text-muted mb-2">Average Order</h6>
+                    <h3 class="fw-bold mb-0">$@((Model.TotalOrders > 0 ? Model.TotalRevenue / Model.TotalOrders : 0).ToString("F2"))</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Popular Items -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-0 p-3">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-fire me-2 text-danger"></i>Top Selling Items
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="p-3">Item</th>
+                                    <th class="p-3 text-center">Quantity Sold</th>
+                                    <th class="p-3 text-end">Revenue</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.PopularItems)
+                                {
+                                    <tr>
+                                        <td class="p-3">
+                                            <strong>@item.FoodItemName</strong>
+                                        </td>
+                                        <td class="p-3 text-center">
+                                            <span class="badge bg-primary">@item.TotalQuantity</span>
+                                        </td>
+                                        <td class="p-3 text-end fw-bold">
+                                            $@item.Revenue.ToString("F2")
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Orders -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-0 p-3">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-list me-2"></i>Recent Orders
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="p-3">Order #</th>
+                                    <th class="p-3">Customer</th>
+                                    <th class="p-3">Date</th>
+                                    <th class="p-3 text-end">Amount</th>
+                                    <th class="p-3 text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var order in Model.RecentOrders.Take(10))
+                                {
+                                    var statusClass = order.Status switch
+                                    {
+                                        "Delivered" => "status-delivered",
+                                        "Out for Delivery" => "status-out-for-delivery",
+                                        "Processing" => "status-processing",
+                                        "Cancelled" => "status-cancelled",
+                                        _ => "status-pending"
+                                    };
+
+                                    <tr>
+                                        <td class="p-3 fw-bold">#@order.Id</td>
+                                        <td class="p-3">
+                                            <small>@order.User?.Name</small>
+                                        </td>
+                                        <td class="p-3">
+                                            <small>@order.OrderDate.ToString("MMM dd")</small>
+                                        </td>
+                                        <td class="p-3 text-end fw-bold">
+                                            $@order.TotalAmount.ToString("F2")
+                                        </td>
+                                        <td class="p-3 text-center">
+                                            <span class="status-badge @statusClass">@order.Status</span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

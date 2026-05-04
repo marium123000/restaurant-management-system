@@ -1,0 +1,218 @@
+@model List<OnlineRest.Models.FoodItem>
+@{
+    ViewData["Title"] = "Menu";
+    var categories = ViewBag.Categories as List<string> ?? new List<string>();
+    var selectedCategory = ViewBag.SelectedCategory as string ?? "All";
+    var searchTerm = ViewBag.SearchTerm as string ?? "";
+}
+
+<div class="container my-5">
+    <!-- Page Header -->
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold mb-3">
+            <i class="fas fa-book-open me-2"></i>Our Menu
+        </h1>
+        <p class="lead text-muted">Explore our delicious selection of dishes</p>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="search-bar mb-4">
+        <form asp-action="Menu" method="get" class="position-relative">
+            <input type="text" 
+                   name="search" 
+                   class="form-control form-control-lg" 
+                   placeholder="Search for dishes..." 
+                   value="@searchTerm"
+                   aria-label="Search menu">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i>
+            </button>
+        </form>
+    </div>
+
+    <!-- Category Tabs -->
+    <div class="category-tabs mb-5">
+        <a href="@Url.Action("Menu", new { category = "All", search = searchTerm })" 
+           class="category-tab @(selectedCategory == "All" ? "active" : "")">
+            <i class="fas fa-th me-2"></i>All Items
+        </a>
+        @foreach (var category in categories)
+        {
+            var icon = category switch
+            {
+                "Appetizers" => "fa-drumstick-bite",
+                "Main Course" => "fa-plate-wheat",
+                "Desserts" => "fa-ice-cream",
+                "Beverages" => "fa-mug-hot",
+                _ => "fa-utensils"
+            };
+            <a href="@Url.Action("Menu", new { category = category, search = searchTerm })" 
+               class="category-tab @(selectedCategory == category ? "active" : "")">
+                <i class="fas @icon me-2"></i>@category
+            </a>
+        }
+    </div>
+
+    <!-- Results Info -->
+    @if (!string.IsNullOrEmpty(searchTerm) || selectedCategory != "All")
+    {
+        <div class="alert alert-info d-flex justify-content-between align-items-center">
+            <span>
+                <i class="fas fa-filter me-2"></i>
+                Showing @Model.Count item(s)
+                @if (!string.IsNullOrEmpty(searchTerm))
+                {
+                    <text> for "@searchTerm"</text>
+                }
+                @if (selectedCategory != "All")
+                {
+                    <text> in @selectedCategory</text>
+                }
+            </span>
+            <a href="@Url.Action("Menu")" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-times me-1"></i>Clear Filters
+            </a>
+        </div>
+    }
+
+    <!-- Food Items Grid -->
+    @if (Model.Any())
+    {
+        <div class="menu-grid">
+            @foreach (var item in Model)
+            {
+                <div class="card food-card fade-in">
+                    <!-- Top Selling Badge -->
+                    @if (item.TotalSold > 300)
+                    {
+                        <span class="badge top-selling-badge position-absolute top-0 start-0 m-3">
+                            <i class="fas fa-fire me-1"></i>Best Seller
+                        </span>
+                    }
+                    
+                    <!-- Category Badge -->
+                    <span class="badge bg-secondary position-absolute top-0 end-0 m-3">
+                        @item.Category
+                    </span>
+
+                    <!-- Food Image -->
+                    <img src="@(item.ImageUrl ?? "/images/placeholder.jpg")" 
+                         class="card-img-top" 
+                         alt="@item.Name"
+                         onerror="this.src='/images/placeholder.jpg'; this.onerror=null;"
+                         loading="lazy">
+
+                    <div class="card-body">
+                        <!-- Item Name -->
+                        <h5 class="card-title">@item.Name</h5>
+                        
+                        <!-- Description -->
+                        <p class="card-text text-muted small">@item.Description</p>
+
+                        <!-- Sales Info -->
+                        <div class="small text-muted mb-3">
+                            <i class="fas fa-shopping-cart me-1"></i>
+                            <span>@item.TotalSold orders</span>
+                        </div>
+
+                        <!-- Price and Add to Cart -->
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="price-tag">$@item.Price.ToString("F2")</span>
+                            </div>
+
+                            @if (item.IsAvailable)
+                            {
+                                @if (Context.Session.GetInt32("UserId") != null)
+                                {
+                                    <form asp-controller="Cart" asp-action="AddToCart" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="foodItemId" value="@item.Id" />
+                                        <div class="d-flex align-items-center gap-2">
+                                            <input type="number" 
+                                                   name="quantity" 
+                                                   value="1" 
+                                                   min="1" 
+                                                   max="10" 
+                                                   class="form-control form-control-sm" 
+                                                   style="width: 60px;"
+                                                   aria-label="Quantity">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-cart-plus me-1"></i>Add
+                                            </button>
+                                        </div>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <a asp-controller="Account" asp-action="Login" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-sign-in-alt me-1"></i>Login to Order
+                                    </a>
+                                }
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">Out of Stock</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <!-- No Results -->
+        <div class="text-center py-5">
+            <i class="fas fa-search fa-4x text-muted mb-3"></i>
+            <h3 class="text-muted">No items found</h3>
+            <p class="text-muted">Try adjusting your search or filter criteria</p>
+            <a href="@Url.Action("Menu")" class="btn btn-primary mt-3">
+                <i class="fas fa-redo me-2"></i>View All Items
+            </a>
+        </div>
+    }
+
+    <!-- Call to Action -->
+    @if (Context.Session.GetInt32("UserId") == null)
+    {
+        <div class="alert alert-info mt-5 text-center">
+            <h5 class="mb-3">
+                <i class="fas fa-gift me-2"></i>Join now and get 100 bonus loyalty points!
+            </h5>
+            <p class="mb-3">Sign up today to start earning rewards with every order.</p>
+            <a asp-controller="Account" asp-action="Register" class="btn btn-success">
+                <i class="fas fa-user-plus me-2"></i>Create Account
+            </a>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // Show success/error messages
+        @if (TempData["Success"] != null)
+        {
+            <text>
+            $(document).ready(function() {
+                const alert = $('<div class="alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3" style="z-index: 9999; min-width: 300px;" role="alert">')
+                    .html('<i class="fas fa-check-circle me-2"></i>@TempData["Success"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button>');
+                $('body').append(alert);
+                setTimeout(() => alert.fadeOut(), 5000);
+            });
+            </text>
+        }
+
+        @if (TempData["Error"] != null)
+        {
+            <text>
+            $(document).ready(function() {
+                const alert = $('<div class="alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3" style="z-index: 9999; min-width: 300px;" role="alert">')
+                    .html('<i class="fas fa-exclamation-circle me-2"></i>@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button>');
+                $('body').append(alert);
+                setTimeout(() => alert.fadeOut(), 5000);
+            });
+            </text>
+        }
+    </script>
+}

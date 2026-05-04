@@ -1,0 +1,125 @@
+@model List<OnlineRest.Models.TableReservation>
+@{
+    ViewData["Title"] = "Manage Reservations";
+}
+
+<div class="container-fluid my-4">
+    <h2 class="fw-bold mb-4">
+        <i class="fas fa-calendar-check me-2"></i>Manage Reservations
+    </h2>
+
+    <!-- Success Message -->
+    <div id="statusMessage" class="alert alert-success alert-dismissible fade show" style="display: none;" role="alert">
+        <i class="fas fa-check-circle me-2"></i>
+        <span id="messageText"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="p-3">#</th>
+                            <th class="p-3">Customer</th>
+                            <th class="p-3">Contact</th>
+                            <th class="p-3">Date & Time</th>
+                            <th class="p-3 text-center">Guests</th>
+                            <th class="p-3">Special Requests</th>
+                            <th class="p-3 text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var reservation in Model)
+                        {
+                            <tr id="reservation-row-@reservation.Id">
+                                <td class="p-3 fw-bold">@reservation.Id</td>
+                                <td class="p-3">
+                                    <strong>@reservation.CustomerName</strong>
+                                </td>
+                                <td class="p-3">
+                                    <small>@reservation.Email</small>
+                                    <br /><small>@reservation.PhoneNumber</small>
+                                </td>
+                                <td class="p-3">
+                                    <strong>@reservation.ReservationDate.ToString("MMM dd, yyyy")</strong>
+                                    <br /><small>@reservation.ReservationTime</small>
+                                </td>
+                                <td class="p-3 text-center fw-bold">@reservation.NumberOfGuests</td>
+                                <td class="p-3">
+                                    <small class="text-muted">@(string.IsNullOrEmpty(reservation.SpecialRequests) ? "-" : reservation.SpecialRequests)</small>
+                                </td>
+                                <td class="p-3 text-center">
+                                    <select name="status" class="form-select form-select-sm reservation-status-select" 
+                                            data-reservation-id="@reservation.Id">
+                                        <option value="Pending" selected="@(reservation.Status == "Pending")">Pending</option>
+                                        <option value="Confirmed" selected="@(reservation.Status == "Confirmed")">Confirmed</option>
+                                        <option value="Completed" selected="@(reservation.Status == "Completed")">Completed</option>
+                                        <option value="Cancelled" selected="@(reservation.Status == "Cancelled")">Cancelled</option>
+                                    </select>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden form for CSRF token -->
+<form id="hiddenForm" style="display:none;">
+    @Html.AntiForgeryToken()
+</form>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Handle status change
+            $('.reservation-status-select').on('change', function() {
+                const reservationId = $(this).data('reservation-id');
+                const newStatus = $(this).val();
+                const selectElement = $(this);
+
+                // Disable select while updating
+                selectElement.prop('disabled', true);
+
+                $.ajax({
+                    url: '@Url.Action("UpdateReservationStatus", "Admin")',
+                    type: 'POST',
+                    data: {
+                        id: reservationId,
+                        status: newStatus,
+                        __RequestVerificationToken: $('#hiddenForm input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function(response) {
+                        // Show success message
+                        $('#messageText').text('Reservation #' + reservationId + ' status updated to ' + newStatus);
+                        $('#statusMessage').removeClass('alert-danger').addClass('alert-success').fadeIn();
+                        
+                        // Auto-hide after 3 seconds
+                        setTimeout(function() {
+                            $('#statusMessage').fadeOut();
+                        }, 3000);
+
+                        // Re-enable select
+                        selectElement.prop('disabled', false);
+                    },
+                    error: function() {
+                        // Show error message
+                        $('#messageText').text('Failed to update reservation status. Please try again.');
+                        $('#statusMessage').removeClass('alert-success').addClass('alert-danger').fadeIn();
+                        
+                        // Re-enable select
+                        selectElement.prop('disabled', false);
+                        
+                        setTimeout(function() {
+                            $('#statusMessage').fadeOut();
+                        }, 3000);
+                    }
+                });
+            });
+        });
+    </script>
+}

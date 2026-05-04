@@ -1,0 +1,305 @@
+﻿@{
+    ViewData["Title"] = "Checkout";
+    var subtotal = ViewBag.SubTotal as decimal? ?? 0;
+    var loyaltyPoints = ViewBag.LoyaltyPoints as int? ?? 0;
+    var user = ViewBag.User as OnlineRest.Models.User;
+}
+
+<div class="container my-5">
+    <h2 class="fw-bold mb-4">
+        <i class="fas fa-credit-card me-2"></i>Checkout
+    </h2>
+
+    <form asp-action="Checkout" method="post" id="checkoutForm" onsubmit="return validateCheckout()">
+        @Html.AntiForgeryToken()
+        
+        <div class="row">
+            <!-- Checkout Form -->
+            <div class="col-lg-8 mb-4">
+                <!-- Delivery Information -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white border-0 p-4">
+                        <h5 class="fw-bold mb-0">
+                            <i class="fas fa-map-marker-alt me-2"></i>Delivery Information
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Delivery Address *</label>
+                            <textarea name="shippingAddress" 
+                                      class="form-control" 
+                                      rows="3" 
+                                      placeholder="Enter your complete delivery address (House/Flat #, Street, Area, City)" 
+                                      required></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Special Instructions (Optional)</label>
+                            <textarea name="specialInstructions" 
+                                      class="form-control" 
+                                      rows="2" 
+                                      placeholder="Any special requests? (e.g., extra spicy, no onions, contactless delivery)"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Method -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white border-0 p-4">
+                        <h5 class="fw-bold mb-0">
+                            <i class="fas fa-wallet me-2"></i>Payment Method
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="payment-option mb-3">
+                            <input type="radio" name="paymentMethod" value="Cash on Delivery" id="cod" />
+                            <div class="flex-grow-1">
+                                <i class="fas fa-money-bill-wave fa-2x" style="color: var(--success-color);"></i>
+                                <div class="ms-3">
+                                    <h6 class="fw-bold mb-1">Cash on Delivery</h6>
+                                    <small class="text-muted">Pay when you receive your order</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="payment-option mb-3">
+                            <input type="radio" name="paymentMethod" value="Credit Card" id="card" />
+                            <div class="flex-grow-1">
+                                <i class="fas fa-credit-card fa-2x" style="color: var(--primary-color);"></i>
+                                <div class="ms-3">
+                                    <h6 class="fw-bold mb-1">Credit/Debit Card</h6>
+                                    <small class="text-muted">Visa, Mastercard, American Express</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="payment-option">
+                            <input type="radio" name="paymentMethod" value="Online Payment" id="online" />
+                            <div class="flex-grow-1">
+                                <i class="fas fa-mobile-alt fa-2x" style="color: var(--secondary-color);"></i>
+                                <div class="ms-3">
+                                    <h6 class="fw-bold mb-1">Online Payment</h6>
+                                    <small class="text-muted">JazzCash, EasyPaisa, Bank Transfer</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Details Form (Hidden by default) -->
+                        <div id="paymentDetailsForm" style="display: none;" class="mt-4 p-4 border rounded bg-light">
+                            <h6 class="fw-bold mb-3">Payment Details</h6>
+                            <div class="alert alert-info mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <small>This is a demo. In production, use a secure payment gateway like Stripe or PayPal.</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Card Number</label>
+                                <input type="text" class="form-control" placeholder="1234 5678 9012 3456" maxlength="19" id="cardNumber" />
+                            </div>
+                            <div class="row">
+                                <div class="col-6 mb-3">
+                                    <label class="form-label">Expiry Date</label>
+                                    <input type="text" class="form-control" placeholder="MM/YY" maxlength="5" id="expiryDate" />
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label class="form-label">CVV</label>
+                                    <input type="text" class="form-control" placeholder="123" maxlength="3" id="cvv" />
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Cardholder Name</label>
+                                <input type="text" class="form-control" placeholder="John Doe" id="cardholderName" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loyalty Points Redemption -->
+                @if (loyaltyPoints >= 100)
+                {
+                    <div class="card shadow-sm border-0" style="background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);">
+                        <div class="card-body p-4">
+                            <h5 class="fw-bold mb-3">
+                                <i class="fas fa-star me-2"></i>Redeem Loyalty Points
+                            </h5>
+                            <p class="mb-3">You have <strong>@loyaltyPoints points</strong> (Worth $@((loyaltyPoints / 100m).ToString("F2")))</p>
+                            
+                            <div class="row align-items-end">
+                                <div class="col-md-8 mb-3 mb-md-0">
+                                    <label class="form-label fw-bold">Points to Redeem (100 points = $1)</label>
+                                    <input type="number" 
+                                           name="pointsToRedeem" 
+                                           id="pointsToRedeem"
+                                           class="form-control" 
+                                           min="0" 
+                                           max="@loyaltyPoints" 
+                                           step="100"
+                                           value="0"
+                                           placeholder="Enter points (multiples of 100)" />
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="alert alert-dark mb-0">
+                                        <strong>Discount:</strong>
+                                        <span id="discountAmount">$0.00</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Order Summary -->
+            <div class="col-lg-4">
+                <div class="cart-summary">
+                    <h5 class="fw-bold mb-4">Order Summary</h5>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal:</span>
+                        <span class="fw-bold" id="subtotalAmount">$@subtotal.ToString("F2")</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Delivery Fee:</span>
+                        <span class="text-success fw-bold">FREE</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-2" id="discountRow" style="display: none !important;">
+                        <span class="text-success">Points Discount:</span>
+                        <span class="text-success fw-bold" id="discountDisplay">-$0.00</span>
+                    </div>
+
+                    <hr />
+
+                    <div class="d-flex justify-content-between mb-4">
+                        <span class="h5 fw-bold">Total:</span>
+                        <span class="h5 fw-bold" style="color: var(--primary-color);" id="totalAmount">$@subtotal.ToString("F2")</span>
+                    </div>
+
+                    <!-- Points to Earn -->
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-star me-2"></i>
+                        You'll earn <strong id="pointsEarn">@((int)Math.Floor(subtotal))</strong> points with this order!
+                    </div>
+
+                    <button type="submit" class="btn btn-success btn-lg w-100 mb-3">
+                        <i class="fas fa-check-circle me-2"></i>Place Order
+                    </button>
+
+                    <a asp-action="Index" class="btn btn-outline-secondary w-100">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Cart
+                    </a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        const subtotal = @subtotal;
+        const maxPoints = @loyaltyPoints;
+
+        // Payment validation function
+        function validateCheckout() {
+            const selectedPayment = $('input[name="paymentMethod"]:checked').val();
+            if (!selectedPayment) {
+                alert('Please select a payment method before placing your order.');
+                return false;
+            }
+
+            // Validate payment details for card/online payments
+            if (selectedPayment === 'Credit Card' || selectedPayment === 'Online Payment') {
+                const cardNumber = $('#cardNumber').val().trim();
+                const expiryDate = $('#expiryDate').val().trim();
+                const cvv = $('#cvv').val().trim();
+                const cardholderName = $('#cardholderName').val().trim();
+
+                if (!cardNumber || !expiryDate || !cvv || !cardholderName) {
+                    alert('Please fill in all payment details.');
+                    return false;
+                }
+
+                // Basic validation
+                if (cardNumber.replace(/\s/g, '').length < 13) {
+                    alert('Please enter a valid card number.');
+                    return false;
+                }
+
+                if (cvv.length < 3) {
+                    alert('Please enter a valid CVV.');
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        // Payment method selection
+        $('.payment-option').click(function() {
+            $('.payment-option').removeClass('selected');
+            $(this).addClass('selected');
+            $(this).find('input[type="radio"]').prop('checked', true);
+
+            // Show/hide payment details form
+            const selectedMethod = $(this).find('input[type="radio"]').val();
+            if (selectedMethod === 'Credit Card' || selectedMethod === 'Online Payment') {
+                $('#paymentDetailsForm').slideDown();
+            } else {
+                $('#paymentDetailsForm').slideUp();
+            }
+        });
+
+        // Format card number input
+        $('#cardNumber').on('input', function() {
+            let value = $(this).val().replace(/\s/g, '');
+            let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+            $(this).val(formattedValue);
+        });
+
+        // Format expiry date
+        $('#expiryDate').on('input', function() {
+            let value = $(this).val().replace(/\D/g, '');
+            if (value.length >= 2) {
+                value = value.substring(0, 2) + '/' + value.substring(2, 4);
+            }
+            $(this).val(value);
+        });
+
+        // Only allow numbers in CVV
+        $('#cvv').on('input', function() {
+            $(this).val($(this).val().replace(/\D/g, ''));
+        });
+
+        // Points redemption calculation
+        $('#pointsToRedeem').on('input', function() {
+            let points = parseInt($(this).val()) || 0;
+            
+            // Validate points
+            if (points > maxPoints) {
+                points = maxPoints;
+                $(this).val(points);
+            }
+            
+            // Round to nearest 100
+            points = Math.floor(points / 100) * 100;
+            
+            // Calculate discount
+            const discount = points * 0.01;
+            const total = Math.max(0, subtotal - discount);
+            const pointsToEarn = Math.floor(total);
+            
+            // Update display
+            $('#discountAmount').text('$' + discount.toFixed(2));
+            $('#discountDisplay').text('-$' + discount.toFixed(2));
+            $('#totalAmount').text('$' + total.toFixed(2));
+            $('#pointsEarn').text(pointsToEarn);
+            
+            // Show/hide discount row
+            if (discount > 0) {
+                $('#discountRow').show();
+            } else {
+                $('#discountRow').hide();
+            }
+        });
+    </script>
+}

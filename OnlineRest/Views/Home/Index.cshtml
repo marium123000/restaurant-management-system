@@ -1,0 +1,282 @@
+@{
+    ViewData["Title"] = "Home";
+    var topSellingItems = ViewBag.TopSellingItems as List<OnlineRest.Models.FoodItem> ?? new List<OnlineRest.Models.FoodItem>();
+}
+
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8 mx-auto text-center">
+                <h1 class="display-3 fw-bold mb-4">Welcome to Delicious Bites</h1>
+                <p class="lead mb-4">Experience culinary excellence with our carefully crafted menu. Fresh ingredients, authentic flavors, and exceptional service.</p>
+                <div class="d-flex gap-3 justify-content-center flex-wrap">
+                    <a asp-controller="Home" asp-action="Menu" class="btn btn-primary btn-lg">
+                        <i class="fas fa-book-open me-2"></i>View Menu
+                    </a>
+                    @if (Context.Session.GetInt32("UserId") != null)
+                    {
+                        <a asp-controller="Home" asp-action="Reservations" class="btn btn-outline-primary btn-lg">
+                            <i class="fas fa-calendar-check me-2"></i>Reserve Table
+                        </a>
+                    }
+                    else
+                    {
+                        <a asp-controller="Account" asp-action="Register" class="btn btn-outline-primary btn-lg">
+                            <i class="fas fa-user-plus me-2"></i>Join Now
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card text-center h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <i class="fas fa-utensils fa-3x" style="color: var(--primary-color);"></i>
+                        </div>
+                        <h4 class="card-title">Quality Food</h4>
+                        <p class="card-text">Fresh ingredients and authentic recipes prepared by expert chefs.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <i class="fas fa-truck fa-3x" style="color: var(--primary-color);"></i>
+                        </div>
+                        <h4 class="card-title">Fast Delivery</h4>
+                        <p class="card-text">Quick and reliable delivery service right to your doorstep.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <i class="fas fa-star fa-3x" style="color: var(--primary-color);"></i>
+                        </div>
+                        <h4 class="card-title">Loyalty Rewards</h4>
+                        <p class="card-text">Earn points with every order and redeem for discounts!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Top Selling Items Section -->
+@if (topSellingItems.Any())
+{
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold mb-3">
+                    <i class="fas fa-fire text-danger me-2"></i>Top Selling Items
+                </h2>
+                <p class="lead text-muted">Our customers' favorite dishes</p>
+            </div>
+
+            <div class="row g-4">
+                @foreach (var item in topSellingItems)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card food-card h-100 border-0 shadow-sm">
+                            @if (item.TotalSold > 200)
+                            {
+                                <span class="badge bg-danger position-absolute top-0 end-0 m-3">
+                                    <i class="fas fa-fire me-1"></i>Hot!
+                                </span>
+                            }
+                            <img src="@(item.ImageUrl ?? "/images/placeholder.jpg")" 
+                                 class="card-img-top" 
+                                 alt="@item.Name"
+                                 onerror="this.src='/images/placeholder.jpg'; this.onerror=null;"
+                                 style="height: 200px; object-fit: cover;">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="card-title mb-0">@item.Name</h5>
+                                    <span class="badge bg-secondary">@item.Category</span>
+                                </div>
+                                <p class="card-text text-muted small mb-3">@item.Description</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="price-tag">$@item.Price.ToString("F2")</span>
+                                        <div class="small text-muted">
+                                            <i class="fas fa-shopping-cart me-1"></i>@item.TotalSold sold
+                                        </div>
+                                    </div>
+                                    @if (Context.Session.GetInt32("UserId") != null)
+                                    {
+                                        <form asp-controller="Cart" asp-action="AddToCart" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="foodItemId" value="@item.Id" />
+                                            <input type="hidden" name="quantity" value="1" />
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-cart-plus"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <a asp-controller="Account" asp-action="Login" class="btn btn-outline-primary btn-sm">
+                                            Login to Order
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="text-center mt-5">
+                <a asp-controller="Home" asp-action="Menu" class="btn btn-primary btn-lg">
+                    <i class="fas fa-book-open me-2"></i>View Full Menu
+                </a>
+            </div>
+        </div>
+    </section>
+}
+
+<!-- Call to Action Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6 mb-4 mb-lg-0">
+                <h2 class="display-6 fw-bold mb-3">Join Our Loyalty Program</h2>
+                <p class="lead mb-4">Earn 1 point for every dollar spent. Redeem 100 points for $1 discount on your next order!</p>
+                <ul class="list-unstyled">
+                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Earn points with every purchase</li>
+                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Exclusive member-only deals</li>
+                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Birthday special rewards</li>
+                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>100 bonus points on signup!</li>
+                </ul>
+                @if (Context.Session.GetInt32("UserId") == null)
+                {
+                    <a asp-controller="Account" asp-action="Register" class="btn btn-success btn-lg">
+                        <i class="fas fa-gift me-2"></i>Sign Up Now
+                    </a>
+                }
+            </div>
+            <div class="col-lg-6">
+                <div class="card border-0 shadow-lg" style="background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);">
+                    <div class="card-body p-5 text-center">
+                        <i class="fas fa-star fa-4x mb-3" style="color: var(--dark-color);"></i>
+                        <h3 class="fw-bold mb-3">Welcome Bonus</h3>
+                        <h1 class="display-3 fw-bold mb-3">100</h1>
+                        <p class="h5 mb-0">Loyalty Points</p>
+                        <p class="text-muted">Just for signing up!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Testimonials Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5 fw-bold mb-3">What Our Customers Say</h2>
+            <p class="lead text-muted">Real reviews from real customers</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                        </div>
+                        <p class="card-text mb-3">"Amazing food quality and fast delivery! The loyalty program is a great bonus. Highly recommended!"</p>
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">Sarah Johnson</h6>
+                                <small class="text-muted">Regular Customer</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                        </div>
+                        <p class="card-text mb-3">"Best restaurant in town! The biryani is absolutely delicious. Love the easy online ordering system."</p>
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">Ahmed Khan</h6>
+                                <small class="text-muted">Food Enthusiast</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                        </div>
+                        <p class="card-text mb-3">"Excellent service and the loyalty points system is fantastic! I've saved so much money already."</p>
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">Maria Garcia</h6>
+                                <small class="text-muted">Loyal Member</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        // Show success messages with fade out
+        @if (TempData["Success"] != null)
+        {
+            <text>
+            $(document).ready(function() {
+                const alert = $('<div class="alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3" style="z-index: 9999;" role="alert">')
+                    .html('<i class="fas fa-check-circle me-2"></i>@TempData["Success"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button>');
+                $('body').append(alert);
+                setTimeout(() => alert.fadeOut(), 5000);
+            });
+            </text>
+        }
+    </script>
+}
