@@ -8,9 +8,23 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-// Add DbContext
+// Add DbContext - Support both SQL Server (local) and PostgreSQL (Render)
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    if (!string.IsNullOrEmpty(databaseUrl))
+    {
+        // Render.com PostgreSQL connection
+        options.UseNpgsql(databaseUrl);
+    }
+    else
+    {
+        // Local SQL Server connection
+        options.UseSqlServer(connectionString);
+    }
+});
 
 // Register PDF Service
 builder.Services.AddScoped<PdfService>();
